@@ -13,29 +13,39 @@
 - [x] Benchmark all models (0.1B–13.3B) — speed, VRAM, quality comparison (13.3B: OOM)
 - [x] Write inference guide explaining modes, Transformer comparison, and benchmarks
 
-## Sprint 2: Practical Usage — RWKV-Runner + GGUF on Docker
+## Sprint 2: GGUF via RWKV-Runner Docker (complete)
 
-Run RWKV as an actual chatbot with an OpenAI-compatible API via [RWKV-Runner](https://github.com/josStorer/RWKV-Runner), containerized in Docker with dual-GPU support. GGUF via llama.cpp is the primary inference path (preserves RNN O(1) state, enables quantization and proven multi-GPU offloading).
+Tested RWKV-Runner + Docker with GGUF models (13.3B Q8 and FP16) on dual-GPU hardware.
 
-See full plan: `claude_plans/PLAN_sprint2_rwkv_runner_docker.md`
+See archived plan: `archive/2026-02-22_PLAN_sprint2_rwkv_runner_docker.md`
 
-- [x] Clone RWKV-Runner repo (gitignored, like RWKV-LM)
+- [x] Clone RWKV-Runner repo
 - [x] Research: RWKV-Runner backends, API, limitations
 - [x] Research: GGUF models available, llama.cpp preserves RNN state
 - [x] Research: multi-GPU solutions from llama_cpp and local-media-gen projects
-- [ ] Build custom Docker image (CUDA 13.0, PyTorch nightly cu128, llama-cpp-python)
-- [ ] Download 13.3B GGUF models (Q8_0 + FP16) from HuggingFace
-- [ ] Test single-GPU: 13.3B Q8 GGUF on RTX 4090 via llama.cpp backend
-- [ ] Test dual-GPU: 13.3B FP16 GGUF across RTX 4090 + RTX 5070 Ti
-- [ ] Test native path: 7.2B .pth on RTX 4090 via rwkv pip backend
-- [ ] Test chat experience: multi-turn conversation, context retention, tool calling
-- [ ] Document findings in inference_results.md, inference_guide.md, setup_guide.md
+- [x] Build custom Docker image (CUDA 13.0, llama-cpp-python sm_89+sm_120)
+- [x] Download 13.3B GGUF models (Q8_0 + FP16) from HuggingFace
+- [x] Test single-GPU: 13.3B Q8 GGUF — loaded, 9741 MiB VRAM
+- [x] Test dual-GPU: 13.3B FP16 GGUF — 41/20 layer split across RTX 4090 + RTX 5070 Ti
+- [x] Test chat experience — works, but no system prompt, sampling params not optimized
+- [x] Evaluate RWKV-Runner — thin wrapper, no GPU control, web UI stripped in web mode
+- [x] Conclusion: RWKV-Runner dropped, llama.cpp directly is the better path
+- [x] Document findings in inference_results.md and inference_guide.md
+- [~] Test native path: 7.2B .pth via Runner — not tested via Runner, already done in Sprint 1
+- [~] Test tool calling — not tested
 
-## Sprint 3: Conclusions & Wrap-up
+**Key outcome:** GGUF via llama.cpp works (quantization + multi-GPU layer offloading confirmed). RWKV-Runner adds no value — removed from project. For future GGUF inference, use llama.cpp directly with own scripts or wrapper.
 
-- [ ] Write a comparison summary: RNN vs Transformer for different use cases
-- [ ] Evaluate if/when RWKV would be the better choice over a Transformer
-- [ ] Final documentation pass — ensure all findings are captured
+## Sprint 3: Further investigation (not started)
+
+First impressions from Sprint 1 and 2 are documented but preliminary. These areas need deeper investigation:
+
+- [ ] Measure state degradation: at what context length does recall actually break down?
+- [ ] Test edge use case: RWKV vs small Transformer on weak CPU with long sequences
+- [ ] Test training/fine-tuning: infctx mode, state tuning, LoRA via RWKV-PEFT
+- [ ] Evaluate large-batch inference: does no KV-cache actually help with concurrent requests?
+- [ ] Monitor RWKV-8 ROSA development — could solve the lossy state problem
+- [ ] Direct llama.cpp integration: own scripts/wrapper for GGUF inference with proper GPU control and sampling
 
 ## Future (optional)
 
@@ -48,5 +58,5 @@ See full plan: `claude_plans/PLAN_sprint2_rwkv_runner_docker.md`
 | Sprint | Status | Notes |
 |--------|--------|-------|
 | Sprint 1 | Complete | All modes tested, pip package works, all models benchmarked (0.1B–13.3B) |
-| Sprint 2 | In progress | Plan ready, research done. Next: build Docker image |
-| Sprint 3 | Not started | |
+| Sprint 2 | Complete | GGUF via llama.cpp works, RWKV-Runner dropped, first impressions documented |
+| Sprint 3 | Not started | Deeper investigation needed: state degradation, edge, training, RWKV-8 ROSA |

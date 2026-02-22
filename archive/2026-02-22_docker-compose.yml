@@ -1,0 +1,38 @@
+# =============================================================================
+# RWKV-Runner — dual-GPU inference server
+#
+# Quick start:
+#   docker compose up --build
+#
+# API:
+#   http://localhost:9090/docs          (Swagger UI)
+#   http://localhost:9090/v1/models     (list loaded models)
+# =============================================================================
+
+services:
+  rwkv-runner:
+    build: .
+    container_name: rwkv-runner
+    ports:
+      - "${PORT:-9090}:8000"
+    volumes:
+      - ./RWKV-Runner:/app/RWKV-Runner
+      - ./Models:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - RWKV_CUDA_ON=1
+      - RWKV_V7_ON=1
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped

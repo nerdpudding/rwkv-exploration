@@ -54,4 +54,4 @@ The developer has extensive practical experience running Transformer-based LLMs 
 - Training or fine-tuning (for now)
 - Production deployment
 - Windows support (Ubuntu only)
-- ~~Using GUI wrappers like RWKV-Runner~~ *(revised: now part of Sprint 2 — see roadmap.md)*
+- ~~Using GUI wrappers like RWKV-Runner~~ *(evaluated in Sprint 2, dropped — no value over llama.cpp directly)*

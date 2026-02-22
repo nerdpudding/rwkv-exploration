@@ -29,11 +29,11 @@ AI-facing log of mistakes, gotchas, and corrections. When an AI assistant makes 
 
 ---
 
-## Our models are g1d, not g1a — but variant-specific demo scripts exist
+## The downloaded models are g1d, not g1a — but variant-specific demo scripts exist
 
-**Lesson:** The generic demo scripts (`rwkv_v7_demo.py`, `rwkv_v7_demo_rnn.py`, `rwkv_v7_demo_fast.py`) reference `rwkv7-g1a-*` model names, but our downloaded models are mostly `rwkv7-g1d-*`. However, the repo also contains variant-specific scripts:
+**Lesson:** The generic demo scripts (`rwkv_v7_demo.py`, `rwkv_v7_demo_rnn.py`, `rwkv_v7_demo_fast.py`) reference `rwkv7-g1a-*` model names, but the downloaded models are mostly `rwkv7-g1d-*`. However, the repo also contains variant-specific scripts:
 - `rwkv_v7a_demo.py` — GPT+RNN demo, references `rwkv7a-g1b-0.1b` weights
-- `rwkv_v7b_demo.py` — GPT+RNN demo, references `rwkv7b-g1b-0.1b` weights (matches our `rwkv7b-g1b-0.1b-20250822-ctx4096.pth`)
+- `rwkv_v7b_demo.py` — GPT+RNN demo, references `rwkv7b-g1b-0.1b` weights (matches the available `rwkv7b-g1b-0.1b-20250822-ctx4096.pth`)
 
 The LoRA dimension parameters (`D_DECAY_LORA`, `D_AAA_LORA`, `D_MV_LORA`, `D_GATE_LORA`) in `rwkv_v7_demo.py` may need adjustment for the g1d variant.
 
@@ -111,8 +111,24 @@ The LoRA dimension parameters (`D_DECAY_LORA`, `D_AAA_LORA`, `D_MV_LORA`, `D_GAT
 
 **However:** Pre-quantized RWKV-7 GGUF models exist on HuggingFace (e.g., `shoumenchougou/RWKV7-G1d-13.3B-GGUF`). Available formats: Q4_K_M (8.4 GB), Q5_K_M (10 GB), Q6_K (11.6 GB), Q8_0 (14.7 GB), FP16 (26.7 GB). These run via llama.cpp / rwkv.cpp backend, not the native rwkv pip package.
 
-**This changes the 13.3B story:** Q8_0 at 14.7 GB fits easily on a single RTX 4090. Even FP16 GGUF (26.7 GB) could work across both GPUs using llama.cpp's native GPU offloading — which we already have working in the llama_cpp project with `-DCMAKE_CUDA_ARCHITECTURES="89;120"`.
+**This changes the 13.3B story:** Q8_0 at 14.7 GB fits easily on a single RTX 4090. Even FP16 GGUF (26.7 GB) could work across both GPUs using llama.cpp's native GPU offloading — which is already working in the llama_cpp project with `-DCMAKE_CUDA_ARCHITECTURES="89;120"`.
 
 **Rule:** For RWKV-7 quantization, use the GGUF path (llama.cpp backend), not the native rwkv pip package. The pip package is fp16/fp32/bf16 only. For multi-GPU with GGUF, reuse the llama.cpp build approach from `/vibe_claude_kilo_cli_exp/llama_cpp/`.
+
+---
+
+## Always check model README for recommended sampling parameters
+
+**Lesson:** When testing the 13.3B GGUF model via llama-cpp-python in Docker, the default sampling parameters were used instead of the model author's recommended settings. This likely affected output quality and made the model appear worse than it is.
+
+**Rule:** Before running inference on any model, check the model card / README on HuggingFace for recommended temperature, top_p, top_k, repeat_penalty, and other sampling settings. Defaults from inference frameworks are generic and often suboptimal for specific models.
+
+---
+
+## RWKV-Runner web mode strips critical UI tabs
+
+**Lesson:** RWKV-Runner's web UI in web mode hides the Configs, Models, Downloads, Train, and About tabs — only Chat + Completion + Settings are visible. This was discovered after the Docker setup was complete, wasting time looking for features that were hidden by the UI mode.
+
+**Rule:** When evaluating a new tool with a web UI, check if the deployment mode (web vs desktop vs API) affects which features are available. Read the tool's documentation about UI modes before building an environment around it.
 
 ---

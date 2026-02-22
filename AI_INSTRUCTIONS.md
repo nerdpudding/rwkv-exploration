@@ -1,6 +1,6 @@
 # AI Instructions — rwkv-exploration
 
-Hands-on exploration of RWKV-7 "Goose" (G1) to understand how pure RNN inference differs from Transformer-based LLMs. The developer has extensive experience with Transformer tooling (llama.cpp, ollama, vLLM) but is new to RNN architectures. The goal is learning, not production deployment.
+Hands-on exploration of RWKV-7 "Goose" (G1) to understand how pure RNN inference differs from Transformer-based LLMs. The developer has extensive experience with Transformer tooling (llama.cpp, ollama, vLLM) but is new to RNN architectures. The goal is learning, not production deployment. Sprint 1 tested native PyTorch inference (all modes, all model sizes). Sprint 2 tested GGUF via llama.cpp in Docker — confirmed it works, but RWKV-Runner was dropped (no value over llama.cpp directly). First impressions documented, more investigation needed (training/fine-tuning, edge use cases, RWKV-8 ROSA).
 
 ## Principles
 
@@ -14,7 +14,7 @@ Hands-on exploration of RWKV-7 "Goose" (G1) to understand how pure RNN inference
 - **Build on existing work** — the RWKV-LM repo contains working demo scripts. Adapt and extend rather than rewriting from scratch.
 - **Use agents when their role fits** — check the agents table below before starting specialized tasks. Update agent instructions after project changes.
 - **Local-first** — everything runs on local hardware (RTX 4090 + RTX 5070 Ti).
-- **Docker where possible** — but only after understanding the raw setup. Conda/uv first to learn, Docker later for reproducibility.
+- **Docker where possible** — but only after understanding the raw setup. Conda/uv first to learn, Docker later for reproducibility. Note: Sprint 2's RWKV-Runner Docker setup was removed because the wrapper was useless, not because Docker is off the table. Docker may return for other purposes (frontends, APIs, etc.) but is currently not on the roadmap.
 
 ## Workflow
 
@@ -41,10 +41,6 @@ rwkv-exploration/                          # Project root
 │   ├── inference_results.md               # Raw benchmark data, VRAM usage, speed measurements
 │   └── lessons_learned.md                 # AI-facing: mistakes to avoid, gotchas, corrections (NOT for results)
 │
-├── RWKV-Runner/                           # [CLONED REPO, GITIGNORED] GUI + API server for RWKV inference
-│                                          #   https://github.com/josStorer/RWKV-Runner
-│                                          #   Includes Dockerfile + docker-compose.yml
-│
 ├── RWKV-LM/                              # [CLONED REPO, GITIGNORED] Do not modify — reference only
 │   └── RWKV-v7/                           # V7 demo scripts, CUDA kernels, tokenizer
 │       ├── rwkv_v7_demo.py                # GPT-mode inference demo (generic, references g1a weights)
@@ -57,18 +53,16 @@ rwkv-exploration/                          # Project root
 │       ├── rwkv_v8_rc00_hybrid_demo.py    # V8 RC hybrid demo (ignore)
 │       ├── rwkv_vocab_v20230424.txt        # Tokenizer vocabulary (65K tokens)
 │       ├── misc/                           # LAMBADA test data (auto-evaluated by demos)
-│       └── cuda/                           # Custom CUDA kernels (wkv7, wkv7s)
+│       ├── cuda/                           # Custom CUDA kernels (wkv7, wkv7s)
+│       ├── train_temp/                    # Training scripts (train.py — for fine-tuning)
+│       ├── mmlu_dev_dataset/              # MMLU evaluation dataset (dev)
+│       ├── mmlu_test_dataset/             # MMLU evaluation dataset (test)
+│       └── rwkv_mmlu_eval.py             # MMLU evaluation script
 │
 ├── Models/                                # [GITIGNORED] Model weights — do not modify
-│   └── rwkv7-g1/                          # RWKV-7 G1 "GooseOne" weights (.pth)
-│       ├── rwkv7-g1d-0.1b-20260129-ctx8192.pth   # 0.1B g1d (~382 MB) ← primary 0.1B
-│       ├── rwkv7a-g1d-0.1b-20260212-ctx8192.pth  # 0.1B g1d "a" variant (~2.0 GB, larger!)
-│       ├── rwkv7b-g1b-0.1b-20250822-ctx4096.pth  # 0.1B g1b variant (~3.7 GB, ctx4096, for rwkv_v7b_demo.py)
-│       ├── rwkv7-g1d-0.4b-20260210-ctx8192.pth   # 0.4B g1d (~902 MB)
-│       ├── rwkv7-g1d-1.5b-20260212-ctx8192.pth   # 1.5B g1d (~3.1 GB)
-│       ├── rwkv7-g1d-2.9b-20260131-ctx8192.pth   # 2.9B g1d (~5.9 GB)
-│       ├── rwkv7-g1d-7.2b-20260131-ctx8192.pth   # 7.2B g1d (~14.4 GB)
-│       └── rwkv7-g1d-13.3b-20260131-ctx8192.pth  # 13.3B g1d (~26.5 GB)
+│   └── rwkv7-g1/                          # RWKV-7 G1 "GooseOne" weights
+│       ├── *.pth                          # Native weights (fp16), various sizes (0.1B–13.3B)
+│       └── GGUF/                          # GGUF quantized models (for llama.cpp)
 │
 ├── scripts/                               # Our own inference scripts (based on demos)
 │   ├── run_rnn.py                         # RNN-mode (no CUDA kernel, torch.compile)

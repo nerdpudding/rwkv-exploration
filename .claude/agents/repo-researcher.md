@@ -57,7 +57,7 @@ File paths and line numbers for relevant code.
 Structured information (tables, lists) about the finding.
 
 ### Implications for This Project
-How the finding affects our setup, experiments, or understanding.
+How the finding affects the project setup, experiments, or understanding.
 
 ## Inviolable Rules
 

@@ -104,11 +104,18 @@ See [Concepts/concept.md](Concepts/concept.md) for full technical decisions and 
 |----------|----------|---------|
 | Our inference scripts | `scripts/` | Yes |
 | RWKV-LM source + demos | `RWKV-LM/` (cloned, gitignored) | No |
-| RWKV-Runner (GUI + API server) | `RWKV-Runner/` (cloned, gitignored) | No |
-| Model weights (0.1B–13.3B) | `Models/rwkv7-g1/` (gitignored) | No |
+| Model weights (0.1B–13.3B, native + GGUF) | `Models/rwkv7-g1/` (gitignored) | No |
 | `rwkv` pip package | [PyPI](https://pypi.org/project/rwkv/) | — |
 | Albatross inference engine | [GitHub](https://github.com/BlinkDL/Albatross) | — |
 | Architecture comparison (Transformers vs MoE vs RNN vs Hybrid) | [YouTube](https://youtu.be/mx9gsRgo8b8) | — |
+
+## Current findings (as of Feb 2026)
+
+**Sprint 1** tested native PyTorch inference across all three modes (RNN, GPT, hybrid) with models from 0.1B to 7.2B. The 7.2B model is the sweet spot for RTX 4090: 51 tok/s, 13.7 GB VRAM, best quality. See [docs/inference_guide.md](docs/inference_guide.md) for details.
+
+**Sprint 2** tested GGUF inference via llama.cpp in Docker with the 13.3B model (Q8_0 and FP16). Both quantization and multi-GPU layer offloading work. RWKV-Runner was evaluated and dropped — it's a thin wrapper over llama-cpp-python with no added value. For future GGUF inference, llama.cpp directly with own scripts is the better path. See [docs/inference_results.md](docs/inference_results.md) for raw data.
+
+**First impressions on RWKV vs Transformers:** For text-LLM tasks on modern GPU hardware, no clear advantage found over Transformers. Potential niches exist (edge hardware, constrained memory, large-batch inference) but are untested. Training/fine-tuning advantages (linear memory, infctx mode, state tuning) are reported but not verified. RWKV-8 ROSA could address the lossy state problem but is experimental. These are preliminary observations — more investigation needed. See [docs/inference_guide.md](docs/inference_guide.md) for the full assessment.
 
 ## Hardware
 

@@ -146,3 +146,90 @@ The model correctly predicts "Paris" as the most likely continuation.
 - 7.2B: Best quality. Correctly names the original designers (Maurice Koechlin and Émile Nouguier). Gravity explanation is clean and complete.
 
 **0.1B speed test generated only 328 of 500 tokens** — hit a stop token early. All other models completed the full token count.
+
+---
+
+## 2026-02-22 — Sprint 2: GGUF via RWKV-Runner Docker
+
+### Setup
+
+| Component | Value |
+|-----------|-------|
+| Container | Custom Docker image |
+| Base image | `nvidia/cuda:13.0.0-devel-ubuntu24.04` |
+| Backend | llama-cpp-python (GGUF via llama.cpp) |
+| CUDA architectures | sm_89 (Ada) + sm_120 (Blackwell) |
+| GPU 0 | RTX 4090 (24 GB VRAM) |
+| GPU 1 | RTX 5070 Ti (16 GB VRAM) |
+| Frontend | RWKV-Runner in web mode |
+| Model | `rwkv7-g1d-13.3b` GGUF (Q8_0 and FP16) |
+
+### Q8_0 GGUF (single-GPU target)
+
+| Metric | Value |
+|--------|-------|
+| Model file | `rwkv7-g1d-13.3b-Q8_0.gguf` (~14 GB) |
+| Total VRAM | 9,741 MiB |
+| GPU placement | Split across both GPUs (unintended — no control via RWKV-Runner) |
+| Recurrent state | 63 MiB fixed (no KV cache) |
+| Memory type | `llama_memory_recurrent` confirmed in logs |
+
+The Q8 model should fit on a single RTX 4090 but was split across both GPUs because RWKV-Runner provides no GPU placement control.
+
+### FP16 GGUF (dual-GPU)
+
+| Metric | Value |
+|--------|-------|
+| Model file | `rwkv7-g1d-13.3b-20260131-ctx8192-FP16.gguf` (~25 GB) |
+| CUDA0 (RTX 4090) | 41 layers, 16,454 MiB |
+| CUDA1 (RTX 5070 Ti) | 20 layers, 8,538 MiB |
+| CPU offload | 512 MiB |
+| Graph splits | 8 |
+| Recurrent state | 63 MiB total (42 MiB CUDA0 + 21 MiB CUDA1) |
+
+The FP16 model auto-split across both GPUs. The recurrent state is constant at 63 MiB regardless of context length — confirmed by `llama_memory_recurrent` in llama.cpp logs.
+
+### Chat test
+
+The model generates coherent responses but:
+- No system prompt configured — the model identifies as ChatGPT or Qwen in some responses (likely from chat template / training data defaults)
+- Sampling parameters used were llama-cpp-python defaults, not the model README's recommended settings (likely affected output quality)
+
+### RWKV-Runner evaluation
+
+| Aspect | Finding |
+|--------|---------|
+| Architecture | Thin wrapper around llama-cpp-python for GGUF models |
+| Web UI (web mode) | Strips Configs, Models, Downloads, Train, About tabs — only Chat + Completion + Settings visible |
+| GPU placement | No control — cannot specify which GPU(s) to use or how to split layers |
+| Added value | None over using llama.cpp / llama-cpp-python directly |
+
+**Conclusion:** RWKV-Runner dropped from the project. For GGUF inference, use llama.cpp directly.
+
+### What was confirmed (tested)
+
+- **GGUF via llama.cpp works.** Both Q8_0 (single-GPU) and FP16 (dual-GPU) loaded and ran successfully via llama-cpp-python. Quantized GGUF and layer offloading across GPUs both work.
+- **Recurrent state is real.** 63 MiB fixed state regardless of context, confirmed via `llama_memory_recurrent` in llama.cpp logs. No KV-cache.
+- **RWKV-Runner adds no value.** It's a thin wrapper around llama-cpp-python. For future tests, a direct implementation with llama.cpp using own scripts or a simple wrapper will work better — more control over GPU placement, sampling parameters, and configuration.
+
+### What needs more testing
+
+- **State degradation:** Known architectural property (lossy compression of older context) but not measured — at what point does recall actually break down?
+- **Edge / constrained hardware:** RWKV's linear complexity vs Transformer's quadratic attention on weak CPUs with long sequences and tiny models. Potentially interesting niche, untested.
+- **Large-batch inference:** No KV-cache means more concurrent requests fit in VRAM. Theoretical advantage for high-concurrency long-context workloads, but counterarguments exist (short RAG contexts make KV-cache small anyway, PagedAttention shrinks the problem, MoE is already efficient).
+- **Training and fine-tuning:** Completely untested. RWKV reportedly has real advantages here (linear memory, infctx mode, state tuning). See [inference_guide.md](inference_guide.md) for details.
+- **RWKV-8 ROSA:** Experimental architecture that directly targets the lossy state problem. See [inference_guide.md](inference_guide.md).
+
+### Preliminary observations: RWKV vs Transformers
+
+> **These are first impressions from discussion and architectural reasoning, NOT measured benchmarks. None of this has been tested or quantified. RWKV could be an interesting alternative in certain scenarios — these observations need deeper investigation before drawing conclusions.**
+
+| Observation | Counterargument |
+|-------------|-----------------|
+| Lossy state means RWKV loses detail from older context | For tasks where exact recall doesn't matter (summarization, style continuation, sentiment tagging), lossy compression is fine and the simplicity is an advantage |
+| KV-cache savings don't matter on large GPU clusters | On a single low-budget GPU serving many concurrent users, no KV-cache means more requests fit in VRAM. Small difference, but real |
+| Tiny Transformers (Phi, Qwen) may beat RWKV on edge hardware | Phi/Qwen still have quadratic attention. On very long sequences at tiny model size on a weak CPU, RWKV's linear complexity is faster. Not tested — worth investigating for edge use cases |
+| 256K Transformer context beats RWKV's infinite lossy state for most tasks | On CPU-only or very low RAM devices, a 256K KV-cache needs gigabytes. RWKV uses constant RAM — on truly constrained hardware it may be the only workable option |
+| RWKV claimed to excel at large-batch inference (no KV-cache = more concurrent requests in same VRAM) | With short contexts (RAG) KV-cache is small anyway; MoE is already efficient; PagedAttention shrinks the problem; if a larger RWKV model is needed for same quality, VRAM savings are eaten up |
+
+**Bottom line:** RWKV-7 runs and works via llama.cpp with GGUF — quantization and multi-GPU layer offloading are functional. The RWKV-Runner wrapper adds nothing; llama.cpp directly (with own scripts) is the better path forward. On hardware with a modern GPU or decent ARM chip with enough RAM, a small quantized Transformer likely wins on most practical metrics. The potential niche for RWKV is weak CPU + very long sequences + tiny model size — but this is untested. Training/fine-tuning advantages and RWKV-8 ROSA are open areas that could change this picture.

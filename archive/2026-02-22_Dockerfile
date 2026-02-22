@@ -1,0 +1,57 @@
+# =============================================================================
+# RWKV-Runner — RTX 4090 (sm_89) + RTX 5070 Ti (sm_120)
+#
+# Two inference paths:
+#   1. GGUF via llama-cpp-python (primary) — quantized models, multi-GPU
+#   2. Native .pth via rwkv pip package (secondary) — fp16 models
+#
+# Single-stage devel image because:
+#   - llama-cpp-python needs CUDA headers at pip install time
+#   - rwkv pip package JIT-compiles CUDA kernels at runtime (needs nvcc)
+#
+# Build:  docker compose build
+# Run:    docker compose up
+# =============================================================================
+
+FROM nvidia/cuda:13.0.0-devel-ubuntu24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --- System dependencies ---
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-dev \
+        gcc \
+        g++ \
+        ninja-build \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# --- PyTorch nightly cu128 (sm_120 / Blackwell support) ---
+RUN pip install --break-system-packages --no-cache-dir \
+    torch --index-url https://download.pytorch.org/whl/nightly/cu128
+
+# --- llama-cpp-python with CUDA for both GPU architectures ---
+ENV CMAKE_ARGS="-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89;120"
+RUN pip install --break-system-packages --no-cache-dir \
+    llama-cpp-python
+
+# --- RWKV-Runner backend dependencies ---
+# Copy requirements and install (torch excluded — already installed via nightly)
+COPY RWKV-Runner/backend-python/requirements.txt /tmp/requirements.txt
+RUN sed -i '/^torch$/d' /tmp/requirements.txt && \
+    sed -i 's/==.*$//' /tmp/requirements.txt && \
+    pip install --break-system-packages --no-cache-dir -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
+
+# RWKV-Runner is mounted at /app/RWKV-Runner (volume)
+# Models are mounted at /models (volume)
+WORKDIR /app/RWKV-Runner/backend-python
+
+EXPOSE 8000
+
+CMD ["python", "main.py", "--port", "8000", "--host", "0.0.0.0", "--webui"]

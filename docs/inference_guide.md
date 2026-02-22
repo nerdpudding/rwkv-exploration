@@ -112,3 +112,64 @@ Tested with the `rwkv` pip package (`cuda fp16` strategy) on an RTX 4090 (24 GB 
 - **7.2B is the sweet spot for RTX 4090.** Best quality available, still fast, and uses just over half the VRAM.
 
 For the full benchmark data with per-test breakdowns, see [inference_results.md](inference_results.md).
+
+## GGUF inference via llama.cpp
+
+RWKV-7 models are available in GGUF format, which means they can run via llama.cpp — the same tool used for quantized Transformer models. This was tested in Sprint 2 with the 13.3B model in both Q8_0 and FP16 quantizations.
+
+**How it works:** llama.cpp implements `llama_memory_recurrent` specifically for RWKV models. Instead of allocating a KV-cache (as it does for Transformers), it maintains the fixed-size recurrent state. The GGUF file contains embedded chat templates and metadata.
+
+**What this enables:**
+- Quantized inference (Q4_K_M, Q5_K_M, Q6_K, Q8_0, FP16) — same quantization options as Transformer GGUFs
+- Multi-GPU layer offloading — layers distributed across GPUs automatically
+- Standard llama.cpp tooling (CLI, server, Python bindings via llama-cpp-python)
+
+**State degradation** is a known architectural property of RWKV: the fixed-size state uses lossy compression, so detail from older context gradually fades. This is fundamentally different from a Transformer's KV-cache, which retains all tokens within the context window exactly. The point at which recall actually breaks down has not been measured in this project — it is an open question for future testing.
+
+For Sprint 2 test results (VRAM, layer splits, chat quality), see [inference_results.md](inference_results.md).
+
+## When to use RWKV — first impressions
+
+> **These are preliminary impressions based on limited testing and architectural reasoning. RWKV could be an interesting alternative in certain scenarios. More investigation is needed before drawing firm conclusions.**
+
+**What was actually tested:**
+- GGUF inference via llama.cpp works — quantization and multi-GPU layer offloading are functional
+- Recurrent state confirmed at 63 MiB (13.3B model), constant regardless of context
+- For GGUF inference, llama.cpp directly (with own scripts or a simple wrapper) is the better path — more control than RWKV-Runner over GPU placement, sampling, and configuration
+
+**Potential niches (discussed, NOT tested):**
+- **Tasks without exact recall needs** (summarization, style continuation, sentiment tagging) — lossy state compression may be acceptable, and the simplicity is an advantage
+- **Low-budget single GPU with many concurrent users** — no KV-cache means more requests fit in VRAM. Small difference, but real
+- **Weak CPU + long sequences + tiny model** — RWKV's linear complexity vs Transformer's quadratic attention could matter here. Worth testing for edge use cases
+- **Constrained hardware (low RAM, CPU-only)** — a 256K Transformer KV-cache needs gigabytes of RAM. RWKV uses constant RAM regardless of sequence length
+- **Large-batch inference** — same KV-cache argument from a throughput angle. Counterarguments: short RAG contexts make KV-cache small anyway; MoE is already efficient; PagedAttention shrinks the problem
+
+**General impression:** On hardware with a modern GPU or decent ARM chip with enough RAM, a small quantized Transformer likely wins on most practical metrics. But the edge/constrained hardware niche is untested and potentially interesting.
+
+## Not yet explored: training and fine-tuning
+
+All testing so far has focused on inference. Training and fine-tuning have not been tested at all. Research (not own testing) indicates RWKV may have real advantages here:
+
+- **Linear memory during training** — Transformers need O(n^2) memory for attention. RWKV is O(n). At 128K tokens, RWKV reportedly achieves 1.37x speedup over Flash-Attention v3, and the gap widens with sequence length.
+- **infctx training mode** — unique to RWKV. Splits long sequences into chunks, passes hidden state between them. Fine-tuning on 128K+ tokens with LoRA on a single 24GB GPU is reportedly feasible (~2MB VRAM per 1024-2048 tokens for 7B). Transformers fundamentally cannot replicate this trick because attention requires all tokens to attend to all others.
+- **State tuning** — unique to RWKV. Fine-tune only the initial state (tiny parameter count: hidden_dim x n_layers). Extremely cheap, reportedly effective for alignment. No Transformer equivalent.
+- **RWKV-PEFT** project exists with LoRA, PiSSA, Bone, State Tuning, INT8/NF4 quantization, DeepSpeed support.
+
+These are claims from RWKV documentation and research papers — not verified through own testing. If the training advantages hold up, this could be a more compelling case for RWKV than the inference story.
+
+## Watch: RWKV-8 "Heron" and ROSA
+
+As of February 2026, RWKV-8 is experimental and under active development. Its most significant feature is **ROSA** (Rapid Online Suffix Automaton) — designed to directly solve the lossy state problem, which is the main argument against RWKV:
+
+- Introduces a discrete bottleneck (VQ-VAE codebooks) to convert hidden vectors to discrete codes
+- A suffix automaton (classical CS data structure) indexes these codes on CPU in parallel with GPU computation
+- When the model needs distant context, the suffix automaton performs exact pattern matching on the code history
+- This is "neurosymbolic" — bridges neural generalization with symbolic precision
+
+Early results (small scale only, as of Feb 2026):
+- 1M param model: 99% accuracy on 40-digit addition/subtraction (requires exact recall)
+- 40K param model: 99.8% accuracy on 1-60 digit reversal (requires exact recall)
+
+If ROSA works at scale, it would eliminate the main argument against RWKV (lossy state = no real infinite context). But: only tested on tiny models at time of writing, not independently validated, unclear how the CPU suffix automaton scales.
+
+Paper: [arXiv:2602.02499](https://arxiv.org/abs/2602.02499) (ROSA-Tuning, evaluated on Qwen3-Base-1.7B)

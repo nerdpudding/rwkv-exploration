@@ -30,7 +30,7 @@ Before doing anything else, read:
 2. **Install dependencies** — `rwkv` pip package (v0.8.32+), torch, numpy
 3. **Verify CUDA setup** — GPU detection, CUDA toolkit version, driver compatibility
 4. **Troubleshoot compilation** — RWKV CUDA kernels (wkv7) compile at first run via `torch.utils.cpp_extension`
-5. **Build Docker containers** — Dockerfile with CUDA base image, Python deps, model mount points
+5. **Build Docker containers** — Dockerfile with CUDA base image, Python deps, model mount points (Sprint 2 Docker setup was removed because the RWKV-Runner wrapper was useless; Docker may return for other purposes but is not currently on the roadmap)
 6. **GPU configuration** — CUDA_VISIBLE_DEVICES, multi-GPU options if applicable
 
 ## Key Requirements
@@ -43,7 +43,7 @@ Before doing anything else, read:
 ## Environment Approach
 
 1. **Phase 1 (learning):** conda or uv environment — direct, full visibility
-2. **Phase 2 (reproducibility):** Docker container with NVIDIA Container Toolkit
+2. **Phase 2 (reproducibility):** Docker container with NVIDIA Container Toolkit (Sprint 2 tested Docker with RWKV-Runner — the wrapper was dropped but Docker infrastructure knowledge applies if Docker returns for other purposes)
 
 ## Report Format
 

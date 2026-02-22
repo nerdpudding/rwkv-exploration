@@ -28,7 +28,8 @@ MODELS = [
     {"name": "1.5B",  "file": "rwkv7-g1d-1.5b-20260212-ctx8192"},
     {"name": "2.9B",  "file": "rwkv7-g1d-2.9b-20260131-ctx8192"},
     {"name": "7.2B",  "file": "rwkv7-g1d-7.2b-20260131-ctx8192"},
-    {"name": "13.3B", "file": "rwkv7-g1d-13.3b-20260131-ctx8192"},
+    # 13.3B .pth removed — OOM on single GPU, use GGUF instead (Models/rwkv7-g1/GGUF/)
+    # {"name": "13.3B", "file": "rwkv7-g1d-13.3b-20260131-ctx8192"},
 ]
 
 ARGS = PIPELINE_ARGS(

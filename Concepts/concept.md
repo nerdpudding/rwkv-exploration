@@ -83,7 +83,7 @@ RWKV-7 introduces "meta-in-context learning" where the model performs mini gradi
 | Phase | Input | Output |
 |-------|-------|--------|
 | **MVP (Sprint 1)** | Text prompt (CLI) | Generated text + tokens/sec |
-| **Sprint 2** | Chat conversation | Multi-turn chat + VRAM metrics |
+| **Sprint 2** | GGUF models via llama.cpp in Docker | VRAM data, layer splits, RWKV-Runner evaluation (dropped) |
 | **Later** | Benchmark suite | Comparison table RNN vs Transformer |
 
 ## Key Technical Decisions
@@ -130,12 +130,12 @@ RWKV state size is constant regardless of context length. For a 2.9B model in fp
 ### Secondary
 5. Compare chat quality against a Transformer model of similar size
 6. Understand multi-GPU options (if applicable for RNN architecture)
-7. Build a Docker container for reproducible inference setup
+7. ~~Build a Docker container for reproducible inference setup~~ *(done in Sprint 2, then removed — the RWKV-Runner wrapper was useless. Docker may return for other purposes)*
 
 ## Development Approach
 
 Iterative, learning-first:
 - Start with smallest model to verify setup and understand mechanics
 - Scale up incrementally for quality evaluation
-- Document findings and comparisons as we go
+- Document findings and comparisons iteratively
 - SOLID/DRY/KISS where applicable (this is exploration, not production)

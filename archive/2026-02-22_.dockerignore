@@ -1,0 +1,29 @@
+# Large directories — mounted as volumes, not needed in build context
+Models/
+RWKV-LM/
+# RWKV-Runner mostly excluded, but requirements.txt needed at build time
+RWKV-Runner/*
+!RWKV-Runner/backend-python/requirements.txt
+
+# Git
+.git/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project docs (not needed in image)
+docs/
+Concepts/
+archive/
+claude_plans/
+*.md
