@@ -36,6 +36,8 @@ rwkv-exploration/                          # Project root
 │   └── project_concept.md                 # Original project description (origin doc)
 │
 ├── docs/                                  # Guides, specs, detailed documentation
+│   ├── setup_guide.md                     # Full environment setup, GPU config, troubleshooting
+│   ├── inference_results.md               # Benchmark data, VRAM usage, speed measurements
 │   └── lessons_learned.md                 # Ongoing log of what worked and what didn't
 │
 ├── RWKV-LM/                              # [CLONED REPO, GITIGNORED] Do not modify — reference only
@@ -64,6 +66,9 @@ rwkv-exploration/                          # Project root
 │       └── rwkv7-g1d-13.3b-20260131-ctx8192.pth  # 13.3B g1d (~26.5 GB)
 │
 ├── scripts/                               # Our own inference scripts (based on demos)
+│   ├── run_rnn.py                         # RNN-mode (no CUDA kernel, torch.compile)
+│   ├── run_gpt.py                         # GPT-mode (wkv7 CUDA kernel, batch processing)
+│   └── run_hybrid.py                      # Hybrid (wkv7s CUDA kernel, GPT prefill + RNN gen)
 ├── claude_plans/                          # Active plans from plan mode
 ├── archive/                               # Archived docs, plans, task trackers
 │

@@ -74,3 +74,19 @@ The LoRA dimension parameters (`D_DECAY_LORA`, `D_AAA_LORA`, `D_MV_LORA`, `D_GAT
 **Rule:** Set `CUDA_VISIBLE_DEVICES` explicitly. Don't rely on defaults.
 
 ---
+
+## g1d LoRA dimensions match the demo script defaults
+
+**Lesson:** Inspecting the 0.1B g1d model weights confirmed that its LoRA dimensions (D_DECAY_LORA=64, D_AAA_LORA=64, D_MV_LORA=32, D_GATE_LORA=128) are identical to the defaults in `rwkv_v7_demo.py`. No adjustment was needed despite the g1a → g1d variant difference.
+
+**Rule:** When trying a new model variant, inspect the weight shapes before changing LoRA params. Use `torch.load(..., map_location='cpu')` and check `blocks.0.att.w1.shape`, `a1.shape`, `v1.shape`, `g1.shape`.
+
+---
+
+## RWKV state size is negligible — VRAM is almost entirely weights
+
+**Lesson:** The RNN state for the 0.1B model is just 2.3 MB (12 layers × 3 state tensors per layer). Total VRAM usage is 373 MB, of which 371 MB is model weights. The state is fixed regardless of context length — a Transformer's KV-cache at 8K context would dwarf this.
+
+**Rule:** When estimating VRAM needs for RWKV, just look at the model file size. The state is negligible. No need to account for context length.
+
+---

@@ -15,6 +15,8 @@ Before doing anything else, read the following files in this exact order:
 3. `roadmap.md` — current status and plans
 4. `Concepts/concept.md` — vision and technical decisions
 5. `docs/lessons_learned.md` — findings log
+6. `docs/inference_results.md` — benchmark data and measurements
+7. `docs/setup_guide.md` — environment setup and troubleshooting
 
 ## Source of Truth Hierarchy
 

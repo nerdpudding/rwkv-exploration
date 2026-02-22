@@ -2,15 +2,15 @@
 
 ## Sprint 1: Get Running & Understand Basics
 
-- [ ] Set up conda environment (`rwkv7`, Python 3.12, PyTorch 2.10.0 cu126)
-- [ ] Create own inference scripts in `scripts/` (based on demos, with our model paths)
-- [ ] Run RNN-mode with 0.1B model — simplest, no CUDA kernel needed
-- [ ] Run GPT-mode with 0.1B model — tests CUDA JIT kernel compilation
-- [ ] Run hybrid mode — understand the prefill + RNN combo
+- [x] Set up conda environment (`rwkv7`, Python 3.12, PyTorch 2.10.0 cu126)
+- [x] Create own inference scripts in `scripts/` (based on demos, with our model paths)
+- [x] Run RNN-mode with 0.1B model — simplest, no CUDA kernel needed
+- [x] Run GPT-mode with 0.1B model — tests CUDA JIT kernel compilation
+- [x] Run hybrid mode — understand the prefill + RNN combo
+- [x] Document VRAM usage and token speed (see `docs/inference_results.md`)
+- [x] Record findings in lessons_learned.md
 - [ ] Test the `rwkv` pip package as an alternative to the raw demo scripts
 - [ ] Scale up to 2.9B model and run a basic chat prompt
-- [ ] Document VRAM usage and token speed for each model size
-- [ ] Record findings in lessons_learned.md
 
 ## Sprint 2: Compare & Benchmark
 
@@ -33,6 +33,6 @@
 
 | Sprint | Status | Notes |
 |--------|--------|-------|
-| Sprint 1 | In progress | Environment: conda rwkv7, Python 3.12, PyTorch 2.10.0 cu126, RTX 4090 only |
+| Sprint 1 | In progress | 0.1B runs in all three modes. Next: rwkv pip package + scale to 2.9B |
 | Sprint 2 | Not started | |
 | Sprint 3 | Not started | |
