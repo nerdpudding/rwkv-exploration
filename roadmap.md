@@ -13,17 +13,23 @@
 - [x] Benchmark all models (0.1B–13.3B) — speed, VRAM, quality comparison (13.3B: OOM)
 - [x] Write inference guide explaining modes, Transformer comparison, and benchmarks
 
-## Sprint 2: Practical Usage with RWKV-Runner
+## Sprint 2: Practical Usage — RWKV-Runner + GGUF on Docker
 
-Now that the low-level understanding is solid, shift to practical usage: run RWKV as an actual chatbot with a GUI and OpenAI-compatible API via [RWKV-Runner](https://github.com/josStorer/RWKV-Runner).
+Run RWKV as an actual chatbot with an OpenAI-compatible API via [RWKV-Runner](https://github.com/josStorer/RWKV-Runner), containerized in Docker with dual-GPU support. GGUF via llama.cpp is the primary inference path (preserves RNN O(1) state, enables quantization and proven multi-GPU offloading).
 
-- [ ] Clone RWKV-Runner repo (gitignored, like RWKV-LM)
-- [ ] Get RWKV-Runner running on Linux (no Windows) — Docker preferred
-- [ ] Test the chat GUI with the 7.2B model
-- [ ] Test the OpenAI-compatible API endpoint
-- [ ] Multi-turn chat session — evaluate quality and context retention in practice
-- [ ] Compare the chat experience against a similarly-sized Transformer model
-- [ ] Document practical findings: where RWKV shines vs where Transformers are better
+See full plan: `claude_plans/PLAN_sprint2_rwkv_runner_docker.md`
+
+- [x] Clone RWKV-Runner repo (gitignored, like RWKV-LM)
+- [x] Research: RWKV-Runner backends, API, limitations
+- [x] Research: GGUF models available, llama.cpp preserves RNN state
+- [x] Research: multi-GPU solutions from llama_cpp and local-media-gen projects
+- [ ] Build custom Docker image (CUDA 13.0, PyTorch nightly cu128, llama-cpp-python)
+- [ ] Download 13.3B GGUF models (Q8_0 + FP16) from HuggingFace
+- [ ] Test single-GPU: 13.3B Q8 GGUF on RTX 4090 via llama.cpp backend
+- [ ] Test dual-GPU: 13.3B FP16 GGUF across RTX 4090 + RTX 5070 Ti
+- [ ] Test native path: 7.2B .pth on RTX 4090 via rwkv pip backend
+- [ ] Test chat experience: multi-turn conversation, context retention, tool calling
+- [ ] Document findings in inference_results.md, inference_guide.md, setup_guide.md
 
 ## Sprint 3: Conclusions & Wrap-up
 
@@ -31,10 +37,16 @@ Now that the low-level understanding is solid, shift to practical usage: run RWK
 - [ ] Evaluate if/when RWKV would be the better choice over a Transformer
 - [ ] Final documentation pass — ensure all findings are captured
 
+## Future (optional)
+
+- [ ] RWKV-7 fine-tuning via `RWKV-LM/RWKV-v7/train_temp/train.py` (full fine-tuning, not LoRA)
+- [ ] Investigate RWKV-PEFT for parameter-efficient fine-tuning
+- [ ] Ollama / LM Studio compatibility testing with GGUF models
+
 ## Status
 
 | Sprint | Status | Notes |
 |--------|--------|-------|
-| Sprint 1 | Complete | All modes tested, pip package works, all models benchmarked (0.1B–13.3B, 13.3B OOM) |
-| Sprint 2 | Up next | RWKV-Runner on Linux/Docker, practical chat + API testing |
+| Sprint 1 | Complete | All modes tested, pip package works, all models benchmarked (0.1B–13.3B) |
+| Sprint 2 | In progress | Plan ready, research done. Next: build Docker image |
 | Sprint 3 | Not started | |
