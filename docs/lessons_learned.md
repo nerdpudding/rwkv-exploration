@@ -90,3 +90,27 @@ The LoRA dimension parameters (`D_DECAY_LORA`, `D_AAA_LORA`, `D_MV_LORA`, `D_GAT
 **Rule:** When estimating VRAM needs for RWKV, just look at the model file size. The state is negligible. No need to account for context length.
 
 ---
+
+## Multi-GPU setup with mixed architectures is already solved in other projects
+
+**Lesson:** The user's system has two GPUs with different architectures: RTX 4090 (Ada/sm_89) and RTX 5070 Ti (Blackwell/sm_120). The sm_120 requires newer CUDA/PyTorch than sm_89. This was already solved in two other projects on the same machine — don't research this from scratch again.
+
+**Solutions already proven:**
+- **llama_cpp project** (`/vibe_claude_kilo_cli_exp/llama_cpp/`): Docker with `nvidia/cuda:13.0.0-devel-ubuntu24.04`, compiled with `-DCMAKE_CUDA_ARCHITECTURES="89;120"`, `count: all` in docker-compose. CUDA 13.0 required for nvcc sm_120 support.
+- **local-media-gen project** (`/vibe_claude_kilo_cli_exp/local-media-gen/`): Docker with `nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04`, PyTorch nightly cu128 (`--index-url https://download.pytorch.org/whl/nightly/cu128`), `device_ids: ["0,1"]` in docker-compose. Known cosmetic warning "you need pytorch with cu130 or higher" is harmless.
+
+**For PyTorch-based projects (like RWKV):** Use the local-media-gen approach — CUDA 12.8+ base image + PyTorch nightly cu128. Not stable PyTorch, not cu126.
+
+**Rule:** Before researching multi-GPU or CUDA architecture compatibility, check the user's existing projects first. The solutions are documented there and should be reused, not rediscovered.
+
+---
+
+## RWKV-7 does not support int8 quantization
+
+**Lesson:** The `RWKV_x070` class in the rwkv pip package explicitly rejects int8 (`i8`) strategies with an assert. RWKV-7 only supports `fp16`, `fp32`, and `bf16`. This means the 13.3B model (25.3 GB in fp16) cannot be shrunk via quantization to fit on a single 24 GB GPU — multi-GPU splitting is the only path.
+
+**Details:** RWKV-Runner's bundled `rwkv_pip/model.py` line 363–365 contains `assert False, "currently rwkv7 strategy must be: cuda/cpu fp16/fp32/bf16"`. Fine-tuning in RWKV-Runner also only supports v4/v5/v6, not v7.
+
+**Rule:** Don't waste time trying to quantize RWKV-7 models. For larger models that don't fit on one GPU, use the strategy split syntax: `cuda:0 fp16 *N -> cuda:1 fp16`.
+
+---
