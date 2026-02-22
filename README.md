@@ -79,6 +79,13 @@ The official `rwkv` pip package wraps the same math in a cleaner API. It adds a 
 
 Requires `RWKV_V7_ON=1` environment variable before import. See [docs/setup_guide.md](docs/setup_guide.md) for usage examples.
 
+| Script | Purpose |
+|--------|---------|
+| `scripts/run_pipeline.py` | Tests the PIPELINE API with and without repetition penalties (0.1B) |
+| `scripts/run_all_models.py` | Benchmarks all g1d models (0.1B–13.3B) — speed, VRAM, quality |
+
+For a detailed explanation of the three inference modes and benchmark results, see [docs/inference_guide.md](docs/inference_guide.md).
+
 ## Use Cases
 
 - Run RWKV-7 inference locally, understand each step
@@ -97,6 +104,7 @@ See [Concepts/concept.md](Concepts/concept.md) for full technical decisions and 
 |----------|----------|---------|
 | Our inference scripts | `scripts/` | Yes |
 | RWKV-LM source + demos | `RWKV-LM/` (cloned, gitignored) | No |
+| RWKV-Runner (GUI + API server) | `RWKV-Runner/` (cloned, gitignored) | No |
 | Model weights (0.1B–13.3B) | `Models/rwkv7-g1/` (gitignored) | No |
 | `rwkv` pip package | [PyPI](https://pypi.org/project/rwkv/) | — |
 | Albatross inference engine | [GitHub](https://github.com/BlinkDL/Albatross) | — |
@@ -124,7 +132,8 @@ See [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) for the full project hierarchy and 
 
 - [Concept Document](Concepts/concept.md) — vision, architecture, technical decisions
 - [AI Instructions](AI_INSTRUCTIONS.md) — project rules, hierarchy, agents
+- [Inference Guide](docs/inference_guide.md) — how RWKV works, inference modes explained, benchmark summary
 - [Setup Guide](docs/setup_guide.md) — full environment setup, GPU config, troubleshooting
+- [Inference Results](docs/inference_results.md) — raw benchmark data, VRAM usage, speed measurements
 - [Roadmap](roadmap.md) — sprint plan and status
-- [Lessons Learned](docs/lessons_learned.md) — ongoing log of findings
-- [Inference Results](docs/inference_results.md) — benchmark data, VRAM usage, speed measurements
+- [Lessons Learned](docs/lessons_learned.md) — AI-facing: mistakes to avoid, gotchas

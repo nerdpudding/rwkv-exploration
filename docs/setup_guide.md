@@ -92,12 +92,14 @@ Our scripts in `scripts/` set these automatically via `os.environ` at the top.
 
 ```bash
 conda activate rwkv7
-python scripts/run_rnn.py      # RNN-mode — simplest, no CUDA kernel
-python scripts/run_gpt.py      # GPT-mode — compiles wkv7 kernel first time
-python scripts/run_hybrid.py   # Hybrid — compiles wkv7s kernel first time
+python scripts/run_rnn.py          # RNN-mode — simplest, no CUDA kernel
+python scripts/run_gpt.py          # GPT-mode — compiles wkv7 kernel first time
+python scripts/run_hybrid.py       # Hybrid — compiles wkv7s kernel first time
+python scripts/run_pipeline.py     # rwkv pip package — PIPELINE API test
+python scripts/run_all_models.py   # Benchmark all models (0.1B–13.3B)
 ```
 
-Each script loads the 0.1B model by default, generates 500 tokens, then runs LAMBADA evaluation. The LAMBADA eval can be interrupted with Ctrl+C.
+The first three scripts load the 0.1B model by default, generate 500 tokens, then run LAMBADA evaluation. The LAMBADA eval can be interrupted with Ctrl+C. `run_pipeline.py` tests the pip package API with the 0.1B model. `run_all_models.py` benchmarks all available models sequentially.
 
 To switch model sizes, edit the script and update:
 - `MODEL_NAME` or `MODEL_PATH` (the weight file path)
@@ -116,7 +118,7 @@ from rwkv.utils import PIPELINE, PIPELINE_ARGS
 
 model = RWKV(model='Models/rwkv7-g1/rwkv7-g1d-0.1b-20260129-ctx8192.pth',
              strategy='cuda fp16')
-pipeline = PIPELINE(model, 'RWKV-LM/RWKV-v7/rwkv_vocab_v20230424')
+pipeline = PIPELINE(model, 'rwkv_vocab_v20230424')
 
 args = PIPELINE_ARGS(temperature=1.0, top_p=0.85,
                      alpha_frequency=0.2, alpha_presence=0.2,

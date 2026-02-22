@@ -10,7 +10,7 @@ Hands-on exploration of RWKV-7 "Goose" (G1) to understand how pure RNN inference
 - **Modularity & flexibility** — keep scripts and configs modular so experiments are easy to reproduce.
 - **ALL code, docs, comments, plans, and commit messages MUST be in English** — always, no exceptions. The user often communicates in Dutch, but everything written to files must be English.
 - **Keep up to date** — after any change, verify that docs, agent instructions, and config files still reflect reality. Stale docs are worse than no docs.
-- **Learn from mistakes** — when an approach fails or wastes effort, document it in `docs/lessons_learned.md`. This file is persistent context for AI assistants to avoid repeating the same mistakes.
+- **Learn from mistakes** — when an AI approach fails, a wrong assumption is made, or effort is wasted due to a misunderstanding, document it in `docs/lessons_learned.md`. This file is exclusively for AI-facing lessons (mistakes to avoid, gotchas, corrections). It is NOT for experiment results, benchmark data, or general observations — those go in `docs/inference_results.md`.
 - **Build on existing work** — the RWKV-LM repo contains working demo scripts. Adapt and extend rather than rewriting from scratch.
 - **Use agents when their role fits** — check the agents table below before starting specialized tasks. Update agent instructions after project changes.
 - **Local-first** — everything runs on local hardware (RTX 4090 + RTX 5070 Ti).
@@ -19,8 +19,8 @@ Hands-on exploration of RWKV-7 "Goose" (G1) to understand how pure RNN inference
 ## Workflow
 
 1. Plan (use plan mode) → ask approval → implement → test → iterate → clean up
-2. For experiments: document the setup, run the experiment, record findings in lessons_learned.md
-3. For benchmarks: record hardware config, model size, settings, and results
+2. For experiments and benchmarks: record setup, hardware config, model size, settings, and results in `docs/inference_results.md`
+3. If something went wrong or a mistake was made: document the lesson in `docs/lessons_learned.md` (AI-facing, mistakes to avoid)
 
 ## Project Hierarchy
 
@@ -36,9 +36,14 @@ rwkv-exploration/                          # Project root
 │   └── project_concept.md                 # Original project description (origin doc)
 │
 ├── docs/                                  # Guides, specs, detailed documentation
+│   ├── inference_guide.md                 # How RWKV inference works: modes, Transformer comparison, benchmarks
 │   ├── setup_guide.md                     # Full environment setup, GPU config, troubleshooting
-│   ├── inference_results.md               # Benchmark data, VRAM usage, speed measurements
-│   └── lessons_learned.md                 # Ongoing log of what worked and what didn't
+│   ├── inference_results.md               # Raw benchmark data, VRAM usage, speed measurements
+│   └── lessons_learned.md                 # AI-facing: mistakes to avoid, gotchas, corrections (NOT for results)
+│
+├── RWKV-Runner/                           # [CLONED REPO, GITIGNORED] GUI + API server for RWKV inference
+│                                          #   https://github.com/josStorer/RWKV-Runner
+│                                          #   Includes Dockerfile + docker-compose.yml
 │
 ├── RWKV-LM/                              # [CLONED REPO, GITIGNORED] Do not modify — reference only
 │   └── RWKV-v7/                           # V7 demo scripts, CUDA kernels, tokenizer
@@ -68,7 +73,9 @@ rwkv-exploration/                          # Project root
 ├── scripts/                               # Our own inference scripts (based on demos)
 │   ├── run_rnn.py                         # RNN-mode (no CUDA kernel, torch.compile)
 │   ├── run_gpt.py                         # GPT-mode (wkv7 CUDA kernel, batch processing)
-│   └── run_hybrid.py                      # Hybrid (wkv7s CUDA kernel, GPT prefill + RNN gen)
+│   ├── run_hybrid.py                      # Hybrid (wkv7s CUDA kernel, GPT prefill + RNN gen)
+│   ├── run_pipeline.py                    # rwkv pip package test (PIPELINE API, repetition penalties)
+│   └── run_all_models.py                  # Benchmark all g1d models (0.1B–13.3B), speed + VRAM
 ├── claude_plans/                          # Active plans from plan mode
 ├── archive/                               # Archived docs, plans, task trackers
 │

@@ -1,6 +1,6 @@
 # Lessons Learned
 
-Ongoing log of what worked and what didn't during development. Primarily intended as context for AI assistants to avoid repeating mistakes, but useful for anyone picking up the project.
+AI-facing log of mistakes, gotchas, and corrections. When an AI assistant makes a wrong assumption, uses the wrong API, or wastes effort due to a misunderstanding, document it here so the same mistake is never repeated. This file is NOT for experiment results, benchmark data, or general observations — those belong in `inference_results.md`.
 
 ---
 
