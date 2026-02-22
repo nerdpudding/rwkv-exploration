@@ -105,12 +105,14 @@ The LoRA dimension parameters (`D_DECAY_LORA`, `D_AAA_LORA`, `D_MV_LORA`, `D_GAT
 
 ---
 
-## RWKV-7 does not support int8 quantization
+## RWKV-7 native pip package does not support int8 — but GGUF quantization exists
 
-**Lesson:** The `RWKV_x070` class in the rwkv pip package explicitly rejects int8 (`i8`) strategies with an assert. RWKV-7 only supports `fp16`, `fp32`, and `bf16`. This means the 13.3B model (25.3 GB in fp16) cannot be shrunk via quantization to fit on a single 24 GB GPU — multi-GPU splitting is the only path.
+**Lesson:** The `RWKV_x070` class in the rwkv pip package explicitly rejects int8 (`i8`) strategies (assert at `model.py` line 363–365). Native RWKV-7 inference only supports `fp16`, `fp32`, `bf16`.
 
-**Details:** RWKV-Runner's bundled `rwkv_pip/model.py` line 363–365 contains `assert False, "currently rwkv7 strategy must be: cuda/cpu fp16/fp32/bf16"`. Fine-tuning in RWKV-Runner also only supports v4/v5/v6, not v7.
+**However:** Pre-quantized RWKV-7 GGUF models exist on HuggingFace (e.g., `shoumenchougou/RWKV7-G1d-13.3B-GGUF`). Available formats: Q4_K_M (8.4 GB), Q5_K_M (10 GB), Q6_K (11.6 GB), Q8_0 (14.7 GB), FP16 (26.7 GB). These run via llama.cpp / rwkv.cpp backend, not the native rwkv pip package.
 
-**Rule:** Don't waste time trying to quantize RWKV-7 models. For larger models that don't fit on one GPU, use the strategy split syntax: `cuda:0 fp16 *N -> cuda:1 fp16`.
+**This changes the 13.3B story:** Q8_0 at 14.7 GB fits easily on a single RTX 4090. Even FP16 GGUF (26.7 GB) could work across both GPUs using llama.cpp's native GPU offloading — which we already have working in the llama_cpp project with `-DCMAKE_CUDA_ARCHITECTURES="89;120"`.
+
+**Rule:** For RWKV-7 quantization, use the GGUF path (llama.cpp backend), not the native rwkv pip package. The pip package is fp16/fp32/bf16 only. For multi-GPU with GGUF, reuse the llama.cpp build approach from `/vibe_claude_kilo_cli_exp/llama_cpp/`.
 
 ---
